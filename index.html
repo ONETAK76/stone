@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Камни по имени и дате рождения</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html,body{margin:0;padding:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#f5f1eb;color:#333}
+  .container{max-width:800px;margin:auto;background:#fcf9f5;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:30px}
+  h1{text-align:center;color:#5a4e47}
+  label{display:block;margin-top:18px;font-weight:bold;color:#5a4e47}
+  input,select{width:100%;padding:12px;margin-top:6px;border:1px solid #d8d1c7;border-radius:8px;background:#fff;font-size:15px}
+  button{width:100%;margin-top:25px;padding:14px;background:#a78b71;color:#fff;font-size:16px;border:none;border-radius:8px;cursor:pointer;transition:background .3s}
+  button:hover{background:#8f735a}
+  .check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:12px}
+  .check-card{background:#fff;border:1px solid #e6dfd5;border-radius:8px;padding:12px}
+  .check-card label{display:flex;align-items:center;cursor:pointer;font-weight:normal;margin:0}
+  .check-card input{margin-right:8px}
+  .mini-desc{font-size:13px;color:#7a6e65;margin-top:4px}
+  .result{margin-top:30px}
+  .stone-card{background:#fff;border-left:6px solid #a78b71;padding:18px;margin-bottom:18px;border-radius:8px}
+  .stone-card h4{margin:0 0 8px;font-size:19px;color:#5a4e47}
+  .stone-card p{margin:6px 0}
+  .synergy{background:#f5f1eb;padding:14px;border-radius:8px;margin-top:12px;font-size:14px;color:#5a4e47}
+  footer{margin-top:40px;text-align:center;font-size:14px;color:#8f735a}
+  footer a{color:#a78b71;text-decoration:none;font-weight:bold}
+  .order-btn{background:#a78b71;margin-top:20px}
+  .order-btn:hover{background:#8f735a}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Индивидуальный подбор камней</h1>
+
+  <label>Имя:</label>
+  <input type="text" id="name" placeholder="Введите имя">
+
+  <label>Дата рождения (ДД.ММ.ГГГГ):</label>
+  <input type="text" id="birthdate" placeholder="ДД.ММ.ГГГГ" maxlength="10">
+
+  <label>Цель (намерение):</label>
+  <select id="goal">
+    <option value="love">Любовь и гармония</option>
+    <option value="health">Здоровье и энергия</option>
+    <option value="money">Деньги и успех</option>
+    <option value="protection">Защита и уверенность</option>
+    <option value="intuition">Интуиция и творчество</option>
+  </select>
+
+  <label>Предпочитаемый цвет:</label>
+  <select id="color">
+    <option value="any">Любой</option>
+    <option value="pink">Розовый</option>
+    <option value="green">Зелёный</option>
+    <option value="blue">Голубой/синий</option>
+    <option value="purple">Фиолетовый</option>
+    <option value="black">Чёрный</option>
+    <option value="white">Белый/прозрачный</option>
+    <option value="yellow">Жёлтый/золотистый</option>
+    <option value="red">Красный</option>
+  </select>
+
+  <button onclick="buildList()">Рассчитать камни</button>
+
+  <h3 style="margin-top:25px;color:#5a4e47">Отметьте понравившиеся:</h3>
+  <div id="checkList" class="check-grid"></div>
+  <button onclick="showSelected()">Показать описание выбранных →</button>
+
+  <div id="result" class="result" style="display:none">
+    <h3 id="resultTitle"></h3>
+    <div id="resultList"></div>
+    <a href="https://t.me/simpledetailss" target="_blank">
+      <button class="order-btn">Заказать браслет</button>
+    </a>
+  </div>
+</div>
+
+<footer>
+  Сделано <strong>Simple Details</strong> | for you<br>
+  <a href="https://t.me/simpledetailss" target="_blank">Telegram-канал: @simpledetailss</a>
+</footer>
+
+<script>
+/* ---------- зодиак ---------- */
+const zodiacSigns = [
+  {name:'Овен',start:[3,21],end:[4,19]},
+  {name:'Телец',start:[4,20],end:[5,20]},
+  {name:'Близнецы',start:[5,21],end:[6,20]},
+  {name:'Рак',start:[6,21],end:[7,22]},
+  {name:'Лев',start:[7,23],end:[8,22]},
+  {name:'Дева',start:[8,23],end:[9,22]},
+  {name:'Весы',start:[9,23],end:[10,22]},
+  {name:'Скорпион',start:[10,23],end:[11,21]},
+  {name:'Стрелец',start:[11,22],end:[12,21]},
+  {name:'Козерог',start:[12,22],end:[1,19]},
+  {name:'Водолей',start:[1,20],end:[2,18]},
+  {name:'Рыбы',start:[2,19],end:[3,20]}
+];
+
+/* ---------- камни по знаку (+ цели внутри) ---------- */
+const zodiacStones = {
+  Овен:   ['Аметист','Гематит','Кварц (прозрачный)','Гранат','Оникс','Цитрин','Тигровый глаз','Сапфир','Чёрный агат','Чёрная лава'],
+  Телец:  ['Розовый кварц','Авантюрин (зелёный)','Малахит','Нефрит','Яшма','Оливин (перидот)','Солнечный камень','Селенит','Агат Ботсвана','Белая лава'],
+  Близнецы:['Агат','Цитрин','Тигровый глаз','Аметист','Аквамарин','Опал','Сапфир','Лазурит','Кахолонг','Агат Ботсвана'],
+  Рак:    ['Лунный камень','Жемчуг','Селенит','Аметист','Розовый кварц','Обсидиан','Аквамарин','Ангелит','Кахолонг','Белая лава'],
+  Лев:    ['Солнечный камень','Опал','Оливин (перидот)','Гранат','Цитрин','Тигровый глаз','Яшма','Кварц (прозрачный)','Чёрная лава','Агат Ботсвана'],
+  Дева:   ['Агат','Нефрит','Яшма','Сапфир','Авантюрин (зелёный)','Малахит','Аметист','Оникс','Кахолонг','Чёрный агат'],
+  Весы:   ['Опал','Лазурит','Розовый кварц','Аметист','Аквамарин','Селенит','Топаз','Ангелит','Агат Ботсвана','Белая лава'],
+  Скорпион:['Обсидиан','Гранат','Топаз','Гематит','Оникс','Малахит','Аметист','Турмалин (чёрный)','Чёрный агат','Чёрная лава'],
+  Стрелец:['Турмалин (чёрный)','Лазурит','Аметист','Цитрин','Солнечный камень','Опал','Сапфир','Яшма','Тигровый глаз','Чёрный агат','Чёрная лава'],
+  Козерог:['Оникс','Гранат','Обсидиан','Нефрит','Яшма','Гематит','Малахит','Сапфир','Чёрный агат','Чёрная лава'],
+  Водолей:['Аметист','Аквамарин','Ангелит','Лазурит','Цитрин','Опал','Кварц (прозрачный)','Тигровый глаз','Агат','Агат Ботсwana'],
+  Рыбы:   ['Аметист','Аквамарин','Лунный камень','Селенит','Жемчуг','Розовый кварц','Опал','Ангелит','Кахолонг','Белая лава']
+};
+
+/* ---------- описания ---------- */
+const stoneBase = {
+  'Аметист':{color:'purple',desc:'Камень духовного просветления, снимает стресс, усиливает интуицию.',synergy:'Смягчает и балансирует энергию всего набора.'},
+  'Гематит':{color:'black',desc:'«Кровяной камень» — заземляет, придаёт уверенность, защищает.',synergy:'Стабилизирует «яркие» камни, делает набор безопасным.'},
+  'Кварц (прозрачный)':{color:'white',desc:'Универсальный усилитель, очищает ауру, подстраивается под цель.',synergy:'Умножает силу всех камней, синхронизирует их.'},
+  'Розовый кварц':{color:'pink',desc:'Камень сердечной чакры, приносит любовь и доверие.',synergy:'Добавляет мягкости и принятия в любой состав.'},
+  'Авантюрин (зелёный)':{color:'green',desc:'Камень удачи и здоровья, притягивает изобилие.',synergy:'Связывает материальное и духовное, делает рост комфортным.'},
+  'Малахит':{color:'green',desc:'Трансформатор, выводит токсины, помогает переменам.',synergy:'Ускоряет результат, но требует аккуратности.'},
+  'Агат':{color:'any',desc:'Защитный талисман, уравновешивает эмоции.',synergy:'Стабилизирует «шумные» камни, универсален.'},
+  'Цитрин':{color:'yellow',desc:'Солнечный камень, приносит изобилие и радость.',synergy:'Добавляет оптимизма и мотивации.'},
+  'Тигровый глаз':{color:'yellow',desc:'Камень мудрости и защиты, помогает принимать решения.',synergy:'Связывает интуицию и практику, делает «острым».'},
+  'Лунный камень':{color:'white',desc:'Усиливает сны, поддерживает женское здоровье.',synergy:'Добавляет плавности и чувствительности.'},
+  'Жемчуг':{color:'white',desc:'Символ чистоты, умиротворяет, усиливает самоуважение.',synergy:'Смягчает резкие энергии, добавляет благородства.'},
+  'Селенит':{color:'white',desc:'Очищает пространство и другие камни, открывает доступ к знаниям.',synergy:'Обновляет энергетику всего набора.'},
+  'Солнечный камень':{color:'yellow',desc:'Даёт ощущение внутреннего солнца, притягивает известность.',synergy:'Согревает и активирует «спокойные» камни.'},
+  'Опал':{color:'any',desc:'Камень творческого вдохновения, усиливает чувства.',synergy:'Делает энергию «радужной» и многогранной.'},
+  'Оливин (перидот)':{color:'green',desc:'Снимает ревность, приносит дружелюбие.',synergy:'Освежает и облегчает любой состав.'},
+  'Нефрит':{color:'green',desc:'Талисман здоровья и долголетия, защищает от несчастий.',synergy:'Добавляет жизненной стойкости, выравнивает скачки.'},
+  'Яшма':{color:'red',desc:'Камень силы и справедливости, помогает добиваться целей.',synergy:'Добавляет «боевого духа» и надёжной опоры.'},
+  'Сапфир':{color:'blue',desc:'Камень мудрости и дисциплины, приносит карьерную удачу.',synergy:'Организует энергию, придаёт ясность и фокус.'},
+  'Лазурит':{color:'blue',desc:'Камень истины и самовыражения, открывает третий глаз.',synergy:'Связывает ментальное и духовное, делает красноречивым.'},
+  'Родонит':{color:'pink',desc:'Камень прощения и сострадания, исцеляет душевные травмы.',synergy:'Смягчает «жёсткие» камни, добавляет заботы.'},
+  'Обсидиан':{color:'black',desc:'Мощный щит, выводит негатив, блокирует атаки.',synergy:'Быстро очищает поле, позволяет другим камням работать чисто.'},
+  'Гранат':{color:'red',desc:'Камень страсти и энергии, мотивирует на победу.',synergy:'Разжигает «огонь» в комплекте, придаёт стремительности.'},
+  'Топаз':{color:'blue',desc:'Камень позитива и целеустремлённости, приносит успех.',synergy:'Делает общий фон радостным и уверенным.'},
+  'Турмалин (чёрный)':{color:'black',desc:'Сильнейший защитник от ЭМИ и негатива.',synergy:'Стабилизирует энергию, делает комплект городско-дружелюбным.'},
+  'Оникс':{color:'black',desc:'Даёт выдержку, защищает от энергетических вампиров.',synergy:'Добавляет «костяка» и надёжности.'},
+  'Аквамарин':{color:'blue',desc:'Успокаивает, помогает выступать публично, снимает страх.',synergy:'Охлаждает «горячие» камни, делает фон лёгким.'},
+  'Ангелит':{color:'blue',desc:'Камень ангельской связи, усиливает молитвы и покой.',synergy:'Поднимает вибрации, помогает тонким камням работать мягче.'},
+  'Кахолонг':{color:'white',desc:'Белый агат. Камень женской энергии, материнства и мягкой защиты. Усиливает интуицию и такт.',synergy:'Смягчает резкие камни, добавляет в набор энергию заботы и внутренней опоры.'},
+  'Чёрный агат':{color:'black',desc:'Мощный защитник и заземлитель. Поглощает негатив, стабилизирует эмоции, помогает при стрессе и бессоннице.',synergy:'Усиливает защитные свойства всего набора, заземляет энергию ярких камней.'},
+  'Агат Ботсвана':{color:'white',goals:['intuition','love','protection'],desc:'Камень гармонии и внутреннего баланса. Помогает при медитации, усиливает интуицию и такт в отношениях.',synergy:'Смягчает и выравнивает энергетику, делает набор «мягким» и «чистым».'},
+  'Чёрная лава':{color:'black',goals:['protection','health'],desc:'Камень первичной земной энергии. Заземляет, снимает стресс, помогает при переутомлении и эмоциональном выгорании.',synergy:'Добавляет «земной» опоры, усиливает заземление и стабильность.'},
+  'Белая лава':{color:'white',goals:['intuition','love'],desc:'Камень очищения и обновления. Помогает начать новый этап, усиливает чувственность и внутреннюю чистоту.',synergy:'Освежает энергию, смягчает тяжёлые камни, добавляет света и лёгкости.'}
+};
+
+/* ---------- вспомогательные функции ---------- */
+function getZodiac(dateStr){
+  const [d,m] = dateStr.split('.').map(Number);
+  for(let z of zodiacSigns){
+    const [sm,sd] = z.start;
+    const [em,ed] = z.end;
+    if((m===sm && d>=sd) || (m===em && d<=ed) || (sm>em && (m>sm || m<em))) return z.name;
+  }
+  return 'Козерог';
+}
+function formatDateInput(el){
+  let v = el.value.replace(/\D/g,'');
+  if(v.length>=5) v = v.slice(0,2)+'.'+v.slice(2,4)+'.'+v.slice(4,8);
+  else if(v.length>=3) v = v.slice(0,2)+'.'+v.slice(2);
+  el.value=v;
+}
+
+/* ---------- основной расчёт ---------- */
+function buildList(){
+  const name = document.getElementById('name').value.trim();
+  const dateStr = document.getElementById('birthdate').value;
+  const color = document.getElementById('color').value;
+
+  if(!name || !/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)){alert('Заполните имя и дату рождения (ДД.ММ.ГГГГ)');return;}
+
+  const zodiac = getZodiac(dateStr);
+  const base = zodiacStones[zodiac] || [];
+  const filtered = color==='any' ? base : base.filter(n=>stoneBase[n].color===color||stoneBase[n].color==='any');
+  const final = filtered.length ? filtered : base;
+
+  const container = document.getElementById('checkList');
+  container.innerHTML='';
+  final.forEach(n=>{
+    const s = stoneBase[n];
+    const div = document.createElement('div');
+    div.className='check-card';
+    div.innerHTML=`
+      <label>
+        <input type="checkbox" value="${n}" checked>
+        <b>${n}</b>
+      </label>
+      <div class="mini-desc">Цвет: ${s.color}. ${s.desc}</div>`;
+    container.appendChild(div);
+  });
+  window.scrollTo({top:container.offsetTop-20,behavior:'smooth'});
+}
+
+/* ---------- показ выбранных ---------- */
+function showSelected(){
+  const checked = Array.from(document.querySelectorAll('#checkList input:checked')).map(ch=>ch.value);
+  if(!checked.length){alert('Отметьте хотя бы один камень');return;}
+  const name = document.getElementById('name').value.trim();
+  const resultTitle = document.getElementById('resultTitle');
+  const resultList = document.getElementById('resultList');
+  resultTitle.textContent = `${name}, ваш индивидуальный набор:`;
+  resultList.innerHTML='';
+
+  checked.forEach(n=>{
+    const s = stoneBase[n];
+    const card = document.createElement('div');
+    card.className='stone-card';
+    card.innerHTML=`
+      <h4>${n}</h4>
+      <p><strong>Свойства:</strong> ${s.desc}</p>
+      <p><strong>Синергия в наборе:</strong> ${s.synergy}</p>`;
+    resultList.appendChild(card);
+  });
+
+  const allSynergy = checked.map(n=>stoneBase[n].synergy).join(' ');
+  const syn = document.createElement('div');
+  syn.className='synergy';
+  syn.innerHTML=`<strong>Общая синергия набора:</strong> ${allSynergy}`;
+  resultList.appendChild(syn);
+
+  document.getElementById('result').style.display='block';
+  window.scrollTo({top:document.getElementById('result').offsetTop,behavior:'smooth'});
+}
+
+/* ---------- маска даты ---------- */
+document.getElementById('birthdate').addEventListener('input',function(){formatDateInput(this)});
+</script>
+
+</body>
+</html>
